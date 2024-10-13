@@ -23,12 +23,12 @@ func JsonPathLookup(obj interface{}, jpath string) (interface{}, error) {
 
 type Compiled struct {
 	path  string
-	steps []step
+	Steps []Step
 }
 
-type step struct {
+type Step struct {
 	op   string
-	key  string
+	Key  string
 	args interface{}
 }
 
@@ -51,14 +51,14 @@ func Compile(jpath string) (*Compiled, error) {
 	tokens = tokens[1:]
 	res := Compiled{
 		path:  jpath,
-		steps: make([]step, len(tokens)),
+		Steps: make([]Step, len(tokens)),
 	}
 	for i, token := range tokens {
 		op, key, args, err := parse_token(token)
 		if err != nil {
 			return nil, err
 		}
-		res.steps[i] = step{op, key, args}
+		res.Steps[i] = Step{op, key, args}
 	}
 	return &res, nil
 }
@@ -69,18 +69,18 @@ func (c *Compiled) String() string {
 
 func (c *Compiled) Lookup(obj interface{}) (interface{}, error) {
 	var err error
-	for _, s := range c.steps {
+	for _, s := range c.Steps {
 		// "key", "idx"
 		switch s.op {
 		case "key":
-			obj, err = get_key(obj, s.key)
+			obj, err = get_key(obj, s.Key)
 			if err != nil {
 				return nil, err
 			}
 		case "idx":
-			if len(s.key) > 0 {
+			if len(s.Key) > 0 {
 				// no key `$[0].test`
-				obj, err = get_key(obj, s.key)
+				obj, err = get_key(obj, s.Key)
 				if err != nil {
 					return nil, err
 				}
@@ -108,9 +108,9 @@ func (c *Compiled) Lookup(obj interface{}) (interface{}, error) {
 				return nil, fmt.Errorf("cannot index on empty slice")
 			}
 		case "range":
-			if len(s.key) > 0 {
+			if len(s.Key) > 0 {
 				// no key `$[:1].test`
-				obj, err = get_key(obj, s.key)
+				obj, err = get_key(obj, s.Key)
 				if err != nil {
 					return nil, err
 				}
@@ -124,7 +124,7 @@ func (c *Compiled) Lookup(obj interface{}) (interface{}, error) {
 				return nil, fmt.Errorf("range args length should be 2")
 			}
 		case "filter":
-			obj, err = get_key(obj, s.key)
+			obj, err = get_key(obj, s.Key)
 			if err != nil {
 				return nil, err
 			}
@@ -215,7 +215,7 @@ func tokenize(query string) ([]string, error) {
 }
 
 /*
- op: "root", "key", "idx", "range", "filter", "scan"
+op: "root", "key", "idx", "range", "filter", "scan"
 */
 func parse_token(token string) (op string, key string, args interface{}, err error) {
 	if token == "$" {
